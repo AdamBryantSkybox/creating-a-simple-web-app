@@ -1,24 +1,32 @@
-from flask import Flask, Response
+from flask import Flask, Response, request
 import requests
+import hashlib
+
 app = Flask(__name__)
+salt = "98fyocw4yx"
 default_name = 'Joe Bloggs'
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def mainpage():
 
-    name = default_name
+	name = default_name
+	if request.method == 'POST':
+		name = request.form['name']
 
-    header = '<html><head><title>Identidock</title></head><body>'
-    body ='''<form method="POST">
-            Hello <input type="text" name="name" value="{}">
-            <input type="submit" value="submit">
-            </form>
-            <p>You look like a:
-            <img src="/monster/monster.png"/></p>
-            '''.format(name)
-    footer = '</body></html>'
+	salted_name = salt + name
+	name_hash = hashlib.sha256(salted_name.encode()).hexdigest()
+	
+	header = '<html><head><title>Identidock</title></head><body>'
+	body ='''<form method="POST">
+			Hello <input type="text" name="name" value="{0}">
+			<input type="submit" value="submit">
+			</form>
+			<p>You look like a:
+			<img src="/monster/{1}"/></p>
+			'''.format(name, name_hash)
+	footer = '</body></html>'
 
-    return header + body + footer
+	return header + body + footer
 
 @app.route('/monster/<name>')
 def get_identicon(name):
@@ -29,4 +37,4 @@ def get_identicon(name):
 	return Response(image, mimetype='image/png')
 	
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+	app.run(debug=True, host='0.0.0.0')
